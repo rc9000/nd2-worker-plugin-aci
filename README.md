@@ -13,8 +13,7 @@ This module can talk to a APIC-EM controller to:
 * emulate the regular Netdisco SNMP-based macsuck to map fvCEp MAC entries to fabric switch ports
   * in the case of virtual port channel, map the VPC MAC relation onto the corresponding port-channels on the fabric switch
 * emulate the regular Netdisco SNMP-based arpnip to store fvCEp MAC/IP pairs like normal arp table entries  
-  * this is completely untested since our lab fabric is L2 only
-* enhance Netdisco discover to enable L2 and L3 layers on the controller, so it is picked for arpnip and macsuck jobs
+* enhance Netdisco discovery to enable L2 and L3 layers on the controller, so it is eligible for arpnip and macsuck jobs
 
 ## Installation
 
@@ -52,7 +51,7 @@ Then for each controller, add an entry to `device_auth`
 
 ### Controller Configuration
 
-Since we'll want to keep the controller as a managed device in Netdisco, it needs to respond to SNMP and be successfully discovered. See the documentation at https://github.com/netdisco/netdisco/ if unsure how to achieve this.
+Since we'll want to keep the controller as a managed device in Netdisco, it needs to respond to SNMP and be successfully discovered. Also, all the switches in the fabric must be discovered in Netdisco as normal SNMP-based devices, so that the mac and arp entries can be mapped to the correct device port. See the documentation at https://github.com/netdisco/netdisco/ if unsure how to achieve this. 
 
 ## Running, Validation 
 
