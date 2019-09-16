@@ -29,8 +29,6 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
       password => $selected_auth->{password},
   );
 
-  $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-
   info sprintf ' [%s] cisco aci arpnip - fetching data from  %s', $device->ip, $aci->url;
   $aci->login();
  

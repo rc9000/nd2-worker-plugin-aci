@@ -27,9 +27,6 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
       password => $selected_auth->{password},
   );
 
-  # set to 0 to skip verification - TODO make that a config option
-  $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 1;
-
   info sprintf ' [%s] cisco aci macsuck - fetching data from  %s', $device->ip, $aci->url;
   $aci->login();
  

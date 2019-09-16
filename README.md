@@ -48,6 +48,8 @@ Then for each controller, add an entry to `device_auth`
         user: 'aciuser'
         password: 'topsecret'
 
+
+
 ### Controller Configuration
 
 Since we'll want to keep the controller as a managed device in Netdisco, it needs to respond to SNMP and be successfully discovered. See the documentation at https://github.com/netdisco/netdisco/ if unsure how to achieve this.
@@ -86,7 +88,7 @@ As a next step, manual arpnip and macusck can be run:
 
 Once this has proven successful, Netdisco will poll the controller in exactly the same way as an SNMP based router or switch, according to the schedule settings.  
 
-## Debugging
+## Debugging & Troubleshooting
 
 You can run netdisco-do with these additional variables and flags:
 
@@ -96,7 +98,7 @@ This will produce a lot of debug output (-D), show details regarding the pluging
 
 Also check out the `./t` and  `./t/testdata` directories, you can run offline tests against the output produced by your fabric (with NETDISCOX\_DUMPJSON). To contribute test data, `./t/testdata/anon.pl` can be used to remove all identifying information from the files.
 
-
+In case of errors like `SSL connect attempt failed error:14090086:SSL routines:ssl3_get_server_certificate:certificate verify failed at LWP/Protocol/http.pm line 50.`, either install the proper CA cert or set the environment variable `PERL_LWP_SSL_VERIFY_HOSTNAME=0`.
 
 
 
