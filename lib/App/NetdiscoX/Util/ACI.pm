@@ -76,7 +76,10 @@ sub read_info_from_json {
     $vlan =~ s/vlan-//;
 
     my @child_tdns = map { $_->{fvRsCEpToPathEp}->{attributes}->{tDn} } @{$d->{fvCEp}->{children}};
+    
     foreach my $c (@child_tdns){
+
+      next unless $c;
 
       if ($c =~ m!topology/pod-(\d+)/paths-(\d+)/pathep-\[(.*?)\]!){
 
