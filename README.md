@@ -4,7 +4,7 @@ Netdisco plugin to fetch mac and arp tables from Cisco ACI APIC-EM SDN controlle
 
 ## Limitations
 
-This is a very early release. It is known to work on exactly one fabric with exactly APIC-EM 3.2, and so far for L2 fvCEp only. You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited.
+This is a very early release. It is known to work on exactly ~~one fabric~~ two fabrics with exactly APIC-EM 3.2, and so far for L2 fvCEp only. You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited.
 
 ## Description
 
