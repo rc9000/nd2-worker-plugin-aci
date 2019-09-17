@@ -1,6 +1,6 @@
 # nd2-worker-plugin-aci
 
-Netdisco plugin to fetch mac and arp tables from Cisco ACI APIC-EM SDN controllers
+Netdisco plugin to fetch mac and arp tables from Cisco ACI APIC SDN controllers
 
 ## Limitations
 
@@ -8,7 +8,7 @@ This is a very early release. It is known to work on exactly ~~one fabric~~ two 
 
 ## Description
 
-This module can talk to a APIC-EM controller to:
+This module can talk to APIC to:
 
 * emulate the regular Netdisco SNMP-based macsuck to map fvCEp MAC entries to fabric switch ports
   * in the case of virtual port channel, map the VPC MAC relation onto the corresponding port-channels on the fabric switch
