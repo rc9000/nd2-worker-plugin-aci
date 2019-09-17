@@ -1,6 +1,6 @@
 # nd2-worker-plugin-aci
 
-Netdisco plugin to fetch mac and arp tables from Cisco ACI APIC SDN controllers
+Netdisco plugin to fetch mac and arp tables from APIC (Cisco ACI SDN controllers)
 
 ## Limitations
 
