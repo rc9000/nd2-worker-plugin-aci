@@ -6,6 +6,7 @@ use Dancer ':syntax';
 use JSON qw(encode_json decode_json);
 use File::Slurp;
 use URL::Encode ':all';
+use Hash::Merge qw(merge);
 
 use Moo;
 use namespace::clean;
@@ -63,7 +64,6 @@ sub read_info_from_json {
   my $tsj = decode_json($topSystem);
   my $aggrj = decode_json($aggr);
 
-  #print Dumper($nodesj); die;
   my $ts = $tsj->{imdata};
   my @node_records; 
   my @nodeip_records; 
@@ -136,11 +136,42 @@ sub read_info_from_json {
 sub fetch_mac_arp_info {
   my ($self) = @_;
 
-  my $ret = $self->aciget($self->url() . "/node/class/fvCEp.json?rsp-subtree=full&rsp-subtree-class=fvCEp,fvRsCEpToPathEp,fvIp");
   my $nodes =  $self->aciget($self->url() . "/node/class/topSystem.json");
   my $aggr =  $self->aciget($self->url() . "/node/class/infraRsAccBndlGrpToAggrIf.json");
 
-  return $self->read_info_from_json($ret->{content_json}, $nodes->{content_json}, $aggr->{content_json}); 
+  my $pagenum = 0;
+  my $pagesize = 50000;
+  my $get_more_pages = 1;
+  my @pages = ();
+  my $status = 0;
+
+  while ($get_more_pages){
+
+    my $ret = $self->aciget($self->url() . "/node/class/fvCEp.json?rsp-subtree=full&"
+      ."rsp-subtree-class=fvCEp,fvRsCEpToPathEp,fvIp&"
+      ."order-by=fvCEp.dn&page-size=$pagesize&page=$pagenum");
+
+    debug sprintf ' [%s] NetdiscoX::Util::ACI - fetched fvCEp page %s with pagesize %s, total records %s', 
+      $self->host, $pagenum, $pagesize, $ret->{content}->{totalCount};
+    push(@pages, $ret);
+
+    if ((($pagenum + 1) * $pagesize) < $ret->{content}->{totalCount}){
+      $pagenum++;
+    }else{
+      $get_more_pages = 0;  
+    }
+  }
+
+  my $mergerec = {};
+  foreach my $r (@pages){
+    $mergerec = merge($mergerec, $r);
+  }
+
+  debug sprintf ' [%s] NetdiscoX::Util::ACI - merged imdata[] contains %s records', 
+    $self->host, (scalar @{$mergerec->{content}->{imdata}});
+  my $mergejson  = JSON->new->pretty->encode($mergerec->{content});
+
+  return $self->read_info_from_json($mergejson, $nodes->{content_json}, $aggr->{content_json}); 
 }
 
 
