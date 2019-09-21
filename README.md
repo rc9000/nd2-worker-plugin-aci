@@ -93,11 +93,11 @@ You can run netdisco-do with these additional variables and flags:
 
      NETDISCOX_DUMPJSON=1 ND2_LOG_PLUGINS=1 netdisco-do macsuck -D -d 10.5.199.5 
 
-This will produce a lot of debug output (-D), show details regarding the pluging loading process (ND2\_LOG\_PLUGINS), as well as store the JSON replies received from ACI in files in /tmp (NETDISCOX\_DUMPJSON).
+This will produce a lot of debug output (-D), show details regarding the plugin loading process (ND2\_LOG\_PLUGINS), as well as store the JSON replies received from ACI in files in /tmp (NETDISCOX\_DUMPJSON).
 
 Also check out the `./t` and  `./t/testdata` directories, you can run offline tests against the output produced by your fabric (with NETDISCOX\_DUMPJSON). To contribute test data, `./t/testdata/anon.pl` can be used to remove all identifying information from the files.
 
-In case of errors like `SSL connect attempt failed error:14090086:SSL routines:ssl3_get_server_certificate:certificate verify failed at LWP/Protocol/http.pm line 50.`, either install the proper CA cert or set the environment variable `PERL_LWP_SSL_VERIFY_HOSTNAME=0`.
+In case of errors like `SSL connect attempt failed error:14090086:SSL routines:ssl3_get_server_certificate:certificate verify failed at LWP/Protocol/http.pm line 50.`, either install the proper CA cert or set the environment variable `PERL_LWP_SSL_VERIFY_HOSTNAME=0` (not recommended).
 
 
 
