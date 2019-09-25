@@ -141,8 +141,8 @@ sub read_info_from_json {
             }
 
             debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-              .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s %s', 
-              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{oobMgmtAddr}, $ep, $c;
+              .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s ', 
+              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{oobMgmtAddr}, $ep;
 
             push(@node_records, {switch => $n->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
 

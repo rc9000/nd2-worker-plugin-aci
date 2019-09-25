@@ -35,43 +35,36 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
   my $now = 'to_timestamp('. (join '.', gettimeofday) .')';
   my $n = 0;
   my $fab_devices = {};
-  my $fab_device_ports = {};
 
   info sprintf ' [%s] cisco aci macsuck - updating node table', $device->ip;
+
+  my @dp = schema('netdisco')->resultset('DevicePort')->search(undef, {columns => [qw/ip port is_uplink/]})->all;
+  my $uplinks = {};
+  foreach my $d (@dp){
+    $uplinks->{$d->ip}->{$d->port} = $d->is_uplink ? "uplink" : "no_uplink";
+  }
+
+  debug sprintf ' [%s] cisco aci macsuck - prefetched ports', $device->ip;
+
   foreach my $entry (@{$mac_arp_info->{nodes}}){
 
     unless ($fab_devices->{$entry->{switch}}){
       $fab_devices->{$entry->{switch}} = get_device($entry->{switch}) unless $fab_devices->{$entry->{switch}};
     }
 
-    unless ($fab_device_ports->{$entry->{switch}."".$entry->{port}}){
-      my $fab_dps = {map {($_->port => $_)}
-                          $fab_devices->{$entry->{switch}}->ports(undef, {prefetch => {neighbor_alias => 'device'}})->all};
-
-      $fab_device_ports->{$entry->{switch}."".$entry->{port}} = $fab_dps->{$entry->{port}};
-      #debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s ->port read from DB',  
-      #  $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
-
-    }else{
-
-      #debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s ->port read from cache',  
-      #  $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
-
-    }
-
-    my $fab_p = $fab_device_ports->{$entry->{switch}."".$entry->{port}};
+    my $fab_p = $uplinks->{$entry->{switch}}->{$entry->{port}};
 
     if (!$fab_p){
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s is unknown to netdisco, skipped', 
         $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
     
-    } elsif ($fab_p->is_uplink){
+    } elsif ($fab_p eq "uplink"){
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s is an uplink, skipped', 
-        $device->ip, $entry->{mac}, $entry->{switch}, $fab_p->port;
+        $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
 
     }else{
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s stored',  
-        $device->ip, $entry->{mac}, $entry->{switch}, $fab_p->port;
+        $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
 
       App::Netdisco::Worker::Plugin::Macsuck::Nodes::store_node(
         $entry->{switch}, $entry->{vlan}, $entry->{port}, $entry->{mac}, $now
