@@ -81,6 +81,7 @@ sub read_info_from_json {
 
       next unless $c;
 
+      # single interface on switch
       if ($c =~ m!topology/pod-(\d+)/paths-(\d+)/pathep-\[(.*?)\]!){
 
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
@@ -88,6 +89,23 @@ sub read_info_from_json {
           .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s', 
           $self->host, $1, $2, $3, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{oobMgmtAddr};
         my $port = $self->long_port($3); 
+        push(@node_records, {switch => $nodeinfo->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+        push(@nodeip_records, {on_device => $nodeinfo->{oobMgmtAddr}, node => $mac, ip => $ip});
+
+      # single interface on fex
+      }elsif ($c =~ m!topology/pod-(\d+)/paths-(\d+)/extpaths-(\d+)/pathep-\[(.*?)\]!){
+
+        my $pod = $1;
+        my $nodeinfo = $self->nodeinfo($2, $ts) ;
+        my $path = $2;
+        my $extpath = $3;
+        (my $port_on_fex = $4) =~ s/eth//;
+        my $fex = "eth$extpath/" . $port_on_fex; 
+        my $port = $self->long_port($fex); 
+        debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
+          .'pod %s node %s port %s fex (extpath) %s mac %s vlan %s arpip %s devname %s devip %s', 
+          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{oobMgmtAddr};
+
         push(@node_records, {switch => $nodeinfo->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
         push(@nodeip_records, {on_device => $nodeinfo->{oobMgmtAddr}, node => $mac, ip => $ip});
 
