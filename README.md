@@ -91,9 +91,9 @@ Once this has proven successful, Netdisco will poll the controller in exactly th
 
 You can run netdisco-do with these additional variables and flags:
 
-     NETDISCOX_DUMPJSON=1 ND2_LOG_PLUGINS=1 netdisco-do macsuck -D -d 10.5.199.5 
+     NETDISCOX_EPFILTER=protpaths-1067 NETDISCOX_DUMPJSON=1 ND2_LOG_PLUGINS=1 netdisco-do macsuck -D -d 10.5.199.5 
 
-This will produce a lot of debug output (-D), show details regarding the plugin loading process (ND2\_LOG\_PLUGINS), as well as store the JSON replies received from ACI in files in /tmp (NETDISCOX\_DUMPJSON).
+This will produce a lot of debug output (-D), show details regarding the plugin loading process (ND2\_LOG\_PLUGINS), as well as store the JSON replies received from ACI in files in /tmp (NETDISCOX\_DUMPJSON). NETDISCOX\_EPFILTER is a regex that will be matched against the fvCEp tDn, so you can limit the run to certain objects or nodes.
 
 Also check out the `./t` and  `./t/testdata` directories, you can run offline tests against the output produced by your fabric (with NETDISCOX\_DUMPJSON). To contribute test data, `./t/testdata/anon.pl` can be used to remove all identifying information from the files.
 

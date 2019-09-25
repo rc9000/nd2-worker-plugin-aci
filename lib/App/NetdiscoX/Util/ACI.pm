@@ -80,6 +80,8 @@ sub read_info_from_json {
     foreach my $c (@child_tdns){
 
       next unless $c;
+      my $epfilter = $ENV{NETDISCOX_EPFILTER} ? $ENV{NETDISCOX_EPFILTER} : ".*"; 
+      next unless $c =~ m/$epfilter/;
 
       # single interface on switch
       if ($c =~ m!topology/pod-(\d+)/paths-(\d+)/pathep-\[(.*?)\]!){
@@ -109,7 +111,8 @@ sub read_info_from_json {
         push(@node_records, {switch => $nodeinfo->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
         push(@nodeip_records, {on_device => $nodeinfo->{oobMgmtAddr}, node => $mac, ip => $ip});
 
-      }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/pathep-\[(.*?)\]$!){
+      # aggregated interface directly on chassis or fex
+      }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/(?:extprotpaths-\d+-\d+/)?pathep-\[(.*?)\]$!){
 
         my $nodeinfos = [$self->nodeinfo($2, $ts),  $self->nodeinfo($3, $ts)];
         my $vpc = $4;
@@ -123,7 +126,7 @@ sub read_info_from_json {
           # find the infraRsAccBndlGrpToAggrIf block for this node id and VPC
           my $tdn_re = qr!topology/pod-\d+/node-$id/sys/aggr!; 
           my $dn_re = qr!topology/pod-\d+/node-$id/local/.*/accbundle-$vpc/!; 
-          #print Dumper { nodei=>$n,  tdn=> $tdn_re, dn=> $dn_re };
+
           my @vpc_node_agg = grep { 
             $_->{infraRsAccBndlGrpToAggrIf}->{attributes}->{tDn} =~ m!$tdn_re!  
             && $_->{infraRsAccBndlGrpToAggrIf}->{attributes}->{dn} =~ m!$dn_re!
@@ -132,9 +135,15 @@ sub read_info_from_json {
           if (@vpc_node_agg == 1){
             # we found one matching po interface for the VPC on this node
             my $port =  $self->long_port($vpc_node_agg[0]->{infraRsAccBndlGrpToAggrIf}->{attributes}->{tSKey});
+            my $ep = "no extprotpath";
+            if ($c =~ m!(extprotpaths-(\d+)-(\d+))!){
+              $ep = $1; 
+            }
+
             debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-              .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s', 
-              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{oobMgmtAddr};
+              .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s %s', 
+              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{oobMgmtAddr}, $ep, $c;
+
             push(@node_records, {switch => $n->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
 
           }else {
