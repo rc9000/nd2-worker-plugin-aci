@@ -11,6 +11,7 @@ use Time::HiRes 'gettimeofday';
 use Scope::Guard 'guard';
 use App::NetdiscoX::Util::ACI;
 use Data::Dumper;
+no warnings 'uninitialized';
 
 register_worker({ phase => 'main', driver => 'netconf' }, sub {
 
@@ -38,10 +39,12 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
 
   info sprintf ' [%s] cisco aci macsuck - updating node table', $device->ip;
 
-  my @dp = schema('netdisco')->resultset('DevicePort')->search(undef, {columns => [qw/ip port is_uplink/]})->all;
+  my @dp = schema('netdisco')->resultset('DevicePort')->search(undef, {columns => [qw/ip port is_uplink remote_type/]})->all;
   my $uplinks = {};
+  my $remote_types = {};
   foreach my $d (@dp){
     $uplinks->{$d->ip}->{$d->port} = $d->is_uplink ? "uplink" : "no_uplink";
+    $remote_types->{$d->ip}->{$d->port} = $d->remote_type;
   }
 
   debug sprintf ' [%s] cisco aci macsuck - prefetched ports', $device->ip;
@@ -53,12 +56,13 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
     }
 
     my $fab_p = $uplinks->{$entry->{switch}}->{$entry->{port}};
+    my $aci_ignore_uplink_re = setting('aci_ignore_uplink_re');
 
     if (!$fab_p){
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s is unknown to netdisco, skipped', 
         $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
     
-    } elsif ($fab_p eq "uplink"){
+    } elsif ($fab_p eq "uplink" && $remote_types->{$entry->{switch}}->{$entry->{port}} !~ m/\Q$aci_ignore_uplink_re/){
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s is an uplink, skipped', 
         $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
 

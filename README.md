@@ -47,6 +47,7 @@ Then for each controller, add an entry to `device_auth`
         user: 'aciuser'
         password: 'topsecret'
 
+The setting `aci_ignore_uplink_re` allows to specify a regex matching a remote_type. If the match succeeds, macsuck will collect entries from the port even if it is discovered as uplink.
 
 
 ### Controller Configuration
