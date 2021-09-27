@@ -9,14 +9,13 @@ apk add perl-json-xs
 apk add perl-lwp-protocol-https
 apk add perl-file-slurp
 apk add perl-test-harness
-apk add perl-url-encode
 apk add perl-regexp-common
 apk add perl-test-harness
+apk add perl-utils
 
 curl -L https://cpanmin.us | perl - App::cpanminus
 
 $CPANM -n JSON URL::Encode App::Prove REST::Client
-$CPANM -n REST::Client
 
 echo PERLLIB=$PERLLIB
 

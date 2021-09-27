@@ -36,8 +36,13 @@ sub nodeinfo {
   my @matches = grep { $_->{'topSystem'}->{attributes}->{id} == $id } @{$nodes};
 
   # relevant attributes that map to netdisco
-    # device.ip is 'oobMgmtAddr' => '10.17.0.5'
+    # device.ip is 'oobMgmtAddr' => '10.17.0.5', if 'oobMgmtAddr' is 0.0.0.0 use inbMgmtaddr instead
     # device.name is 'name' => 'v02sw0102-za'
+  if ($matches[0]->{topSystem}->{attributes}->{oobMgmtAddr} eq "0.0.0.0"){
+      $matches[0]->{topSystem}->{attributes}->{mgmtAddr} = $matches[0]->{topSystem}->{attributes}->{inbMgmtAddr};
+  }else{
+      $matches[0]->{topSystem}->{attributes}->{mgmtAddr} = $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr};
+  }
   return $matches[0]->{topSystem}->{attributes};
 
 }
@@ -89,10 +94,10 @@ sub read_info_from_json {
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
         debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
           .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s', 
-          $self->host, $1, $2, $3, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{oobMgmtAddr};
+          $self->host, $1, $2, $3, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
         my $port = $self->long_port($3); 
-        push(@node_records, {switch => $nodeinfo->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
-        push(@nodeip_records, {on_device => $nodeinfo->{oobMgmtAddr}, node => $mac, ip => $ip});
+        push(@node_records, {switch => $nodeinfo->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+        push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
 
       # single interface on fex
       }elsif ($c =~ m!topology/pod-(\d+)/paths-(\d+)/extpaths-(\d+)/pathep-\[(.*?)\]!){
@@ -106,10 +111,10 @@ sub read_info_from_json {
         my $port = $self->long_port($fex); 
         debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
           .'pod %s node %s port %s fex (extpath) %s mac %s vlan %s arpip %s devname %s devip %s', 
-          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{oobMgmtAddr};
+          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
 
-        push(@node_records, {switch => $nodeinfo->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
-        push(@nodeip_records, {on_device => $nodeinfo->{oobMgmtAddr}, node => $mac, ip => $ip});
+        push(@node_records, {switch => $nodeinfo->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+        push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
 
       # aggregated interface directly on chassis or fex
       }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/(?:extprotpaths-\d+-\d+/)?pathep-\[(.*?)\]$!){
@@ -120,7 +125,7 @@ sub read_info_from_json {
         foreach my $n (@{$nodeinfos}){
 
           my $id = $n->{id};
-          push(@nodeip_records, {on_device => $n->{oobMgmtAddr}, node => $mac, ip => $ip});
+          push(@nodeip_records, {on_device => $n->{mgmtAddr}, node => $mac, ip => $ip});
 
 
           # find the infraRsAccBndlGrpToAggrIf block for this node id and VPC
@@ -142,9 +147,9 @@ sub read_info_from_json {
 
             debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
               .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s ', 
-              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{oobMgmtAddr}, $ep;
+              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{mgmtAddr}, $ep;
 
-            push(@node_records, {switch => $n->{oobMgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+            push(@node_records, {switch => $n->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
 
           }else {
             warning sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - VPC %s nodeid %s - error locating port-channel'."\n", $self->host, $vpc, $id; 

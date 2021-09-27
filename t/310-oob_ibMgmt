@@ -1,0 +1,29 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Test::More;
+use Data::Dumper;
+use File::Slurp ':all';
+use JSON qw(encode_json decode_json);
+
+my $JDIR = $ENV{JDIR};
+
+require_ok('App::NetdiscoX::Util::ACI');
+
+my $aci = App::NetdiscoX::Util::ACI->new(
+      host => "dummy.local",
+);
+
+
+my $topSystem = slurp($JDIR."/topSystem_3.json");
+my $tsj = decode_json($topSystem);
+
+my $n1 = $aci->nodeinfo(1, $tsj->{imdata});
+ok ( $n1->{mgmtAddr} eq "10.0.18.5" );
+
+my $n2 = $aci->nodeinfo(2, $tsj->{imdata});
+ok ( $n2->{mgmtAddr} eq "16.157.198.204" );
+
+
+done_testing;
