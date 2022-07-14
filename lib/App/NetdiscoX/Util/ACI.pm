@@ -1,5 +1,8 @@
 # vim: set softtabstop=2 ts=8 sw=2 et: 
 package App::NetdiscoX::Util::ACI;
+use warnings;
+use strict;
+no warnings 'uninitialized';
 use Data::Dumper;
 use REST::Client;
 use Dancer ':syntax';
@@ -7,9 +10,9 @@ use JSON qw(encode_json decode_json);
 use File::Slurp;
 use URL::Encode ':all';
 use Hash::Merge qw(merge);
-
 use Moo;
 use namespace::clean;
+
 
 has port => (
   is  => 'rw',
@@ -80,6 +83,14 @@ sub read_info_from_json {
     my $vlan = $d->{fvCEp}->{attributes}->{encap} ? $d->{fvCEp}->{attributes}->{encap} : 0;
     $vlan =~ s/vlan-//;
 
+    # in ACI 5.x, there is a fvIp subojects and multiple potential IPs for the fvCEp
+    my $fvIps = [];
+    foreach my $child_fvCEp ( @{$d->{fvCEp}->{children}} ) {
+      my $fip = $child_fvCEp->{fvIp}->{attributes}->{addr};
+      push(@{$fvIps}, $fip) if $fip;
+    }
+    my $fipstr = join(",", @{$fvIps});
+
     my @child_tdns = map { $_->{fvRsCEpToPathEp}->{attributes}->{tDn} } @{$d->{fvCEp}->{children}};
     
     foreach my $c (@child_tdns){
@@ -94,10 +105,20 @@ sub read_info_from_json {
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
         debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
           .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s', 
-          $self->host, $1, $2, $3, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+          $self->host, $1, $2, $3, $mac, $vlan, ($ip ? $ip : $fipstr), $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
         my $port = $self->long_port($3); 
         push(@node_records, {switch => $nodeinfo->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
-        push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
+
+        if ($ip){
+          push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
+        }elsif ($fvIps){
+          foreach my $fip (@{$fvIps}){
+            push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $fip});
+            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
+              .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s', 
+              $self->host, $1, $2, $3, $mac, $vlan, $fip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+          }
+        }
 
       # single interface on fex
       }elsif ($c =~ m!topology/pod-(\d+)/paths-(\d+)/extpaths-(\d+)/pathep-\[(.*?)\]!){
@@ -111,10 +132,22 @@ sub read_info_from_json {
         my $port = $self->long_port($fex); 
         debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
           .'pod %s node %s port %s fex (extpath) %s mac %s vlan %s arpip %s devname %s devip %s', 
-          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, $ip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, ($ip ? $ip : $fipstr), $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
 
         push(@node_records, {switch => $nodeinfo->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
-        push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
+
+        if ($ip){
+          push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
+        }elsif ($fvIps){
+          foreach my $fip (@{$fvIps}){
+            push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $fip});
+            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
+              .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s', 
+              $self->host, $pod, $path, $extpath, $mac, $vlan, $fip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+          }
+        }
+
+
 
       # aggregated interface directly on chassis or fex
       }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/(?:extprotpaths-\d+-\d+/)?pathep-\[(.*?)\]$!){
@@ -125,8 +158,18 @@ sub read_info_from_json {
         foreach my $n (@{$nodeinfos}){
 
           my $id = $n->{id};
-          push(@nodeip_records, {on_device => $n->{mgmtAddr}, node => $mac, ip => $ip});
+          #push(@nodeip_records, {on_device => $n->{mgmtAddr}, node => $mac, ip => $ip});
 
+          if ($ip){
+            push(@nodeip_records, {on_device => $n->{mgmtAddr}, node => $mac, ip => $ip});
+          }elsif ($fvIps){
+            foreach my $fip (@{$fvIps}){
+              push(@nodeip_records, {on_device => $n->{mgmtAddr}, node => $mac, ip => $fip});
+              debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
+                .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s', 
+               $self->host, $1, $2, $3, $mac, $vlan, $fip, $n->{name}, $n->{mgmtAddr};
+            }
+          }
 
           # find the infraRsAccBndlGrpToAggrIf block for this node id and VPC
           my $tdn_re = qr!topology/pod-\d+/node-$id/sys/aggr!; 
@@ -147,7 +190,7 @@ sub read_info_from_json {
 
             debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
               .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s ', 
-              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, $ip, $n->{name}, $n->{mgmtAddr}, $ep;
+              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, ($ip ? $ip : $fipstr), $n->{name}, $n->{mgmtAddr}, $ep;
 
             push(@node_records, {switch => $n->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
 

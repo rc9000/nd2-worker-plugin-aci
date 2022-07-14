@@ -1,0 +1,29 @@
+#!/usr/bin/env perl
+
+use strict; 
+#use warnings FATAL => 'all';
+use warnings;
+use Test::More; 
+use Data::Dumper;
+use File::Slurp ':all';
+
+my $JDIR = $ENV{JDIR};
+
+require_ok('App::NetdiscoX::Util::ACI');
+
+my $aci = App::NetdiscoX::Util::ACI->new(
+      host => "dummy.local",
+);
+
+
+my $fvCEp = slurp($JDIR."/fvCEp_4.json");
+my $topSystem = slurp($JDIR."/topSystem_4.json");
+my $aggr = slurp($JDIR."/aggr_4.json");
+my $info = $aci->read_info_from_json($fvCEp, $topSystem, $aggr);
+
+# check vpc codepath
+my @r1 = grep { $_->{node} =~ m/BE:EF:F4:21:23:0F/i } @{$info->{node_ips}};
+is (@r1, 2, "node_ip number of test entries");
+ok ( (grep { $_->{ip} =~ m/129.198.26.237/i } @r1), "canary IP eth found");
+
+done_testing;
