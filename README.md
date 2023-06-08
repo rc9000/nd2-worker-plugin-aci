@@ -14,6 +14,7 @@ This module can talk to APIC to:
   * in the case of virtual port channel, map the VPC MAC relation onto the corresponding port-channels on the fabric switch
 * emulate the regular Netdisco SNMP-based arpnip to store fvCEp MAC/IP pairs like normal arp table entries  
 * enhance Netdisco discovery to enable L2 and L3 layers on the controller, so it is eligible for arpnip and macsuck jobs
+* populate Netdisco `custom_fields` with ACI-specifc attributes
 
 ## Installation
 
@@ -35,7 +36,7 @@ Can be in any location, e.g:
 Add the following settings to `deployment.yml` to activate the extension
 
     include_paths: [ '/home/netdisco/nd2-worker-plugin-aci/lib' ]
-    extra_worker_plugins: ['X::Macsuck::Nodes', 'X::Arpnip::Nodes', 'X::Discover::Properties']
+    extra_worker_plugins: ['X::Macsuck::Nodes', 'X::Arpnip::Nodes', 'X::Discover::Properties', 'X::Discover::FabricDevices']
 
 Then for each controller, add an entry to `device_auth` 
 
@@ -87,6 +88,16 @@ As a next step, manual arpnip and macusck can be run:
     [11310] 2019-02-28 20:23:30  info arpnip: status done: OK
 
 Once this has proven successful, Netdisco will poll the controller in exactly the same way as an SNMP based router or switch, according to the schedule settings.  
+
+## Storing device and port `dn`, EPG and other ACI attributes
+
+ * when running `discover`, hhe `Discover::FabricDevices` module will store various ACI information in the `custom_fields` structure of Netdisco 
+ * `macsuck` also stores the EPG an interface participates in, in the `device_port.custom_fields.epgs` array
+ * these features require Netdisco 2.062000 or newer 
+ * discovery of an APIC can become pretty lengthy, the following helps:
+   * `CREATE INDEX cf_gin_device ON device USING gin (custom_fields);`
+   * `CREATE INDEX cf_gin_device_port ON device_port USING gin (custom_fields);`
+   * `discover_timeout: 900` or higher in deployment.yml
 
 ## Debugging & Troubleshooting
 

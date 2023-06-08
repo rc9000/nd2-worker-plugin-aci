@@ -11,7 +11,31 @@ use Time::HiRes 'gettimeofday';
 use Scope::Guard 'guard';
 use App::NetdiscoX::Util::ACI;
 use Data::Dumper;
+use JSON 'encode_json';
 no warnings 'uninitialized';
+
+sub store_epg_custom_fields {
+  my ($device, $epgmap) = @_;
+
+  foreach my $leaf_ip (keys %{$epgmap}){
+    foreach my $port (keys %{$epgmap->{$leaf_ip}}){
+
+        my $portrow = schema(vars->{'tenant'})->resultset('DevicePort')->find({ ip => $leaf_ip, port => $port});
+        $portrow->make_column_dirty('custom_fields');
+
+        my @arr = sort keys %{$epgmap->{$leaf_ip}->{$port}};
+        my $json_arr = encode_json \@arr;
+        my $k = "epgs";
+
+        debug sprintf ' [%s] cisco aci macsuck - store_epg %s %s : %s',  $device->ip, $leaf_ip, $port, $json_arr;
+
+        $portrow->update({
+          custom_fields => \['jsonb_set(custom_fields, ?, ?::jsonb)'  => (qq!{$k}!, $json_arr) ]
+        })->discard_changes();
+    
+    }
+  }
+}
 
 register_worker({ phase => 'main', driver => 'netconf' }, sub {
 
@@ -37,8 +61,10 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
   my $n = 0;
   my $fab_devices = {};
 
-  info sprintf ' [%s] cisco aci macsuck - updating node table', $device->ip;
+  info sprintf ' [%s] cisco aci macsuck - updating epg participation in device_port', $device->ip, $n;
+  store_epg_custom_fields($device, $mac_arp_info->{epgmap});
 
+  info sprintf ' [%s] cisco aci macsuck - updating node table', $device->ip;
   my @dp = schema('netdisco')->resultset('DevicePort')->search(undef, {columns => [qw/ip port is_uplink remote_type/]})->all;
   my $uplinks = {};
   my $remote_types = {};
@@ -76,8 +102,10 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
       $n++ 
     }
   }
-
   info sprintf ' [%s] cisco aci macsuck - stored %s node entries', $device->ip, $n;
+
+
+
   $aci->logout();
   return Status->done("OK");
 });

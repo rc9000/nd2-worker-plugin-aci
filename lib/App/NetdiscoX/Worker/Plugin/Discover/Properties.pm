@@ -6,7 +6,7 @@ use App::Netdisco::Worker::Plugin;
 use aliased 'App::Netdisco::Worker::Status';
 use Data::Dumper;
 
-register_worker({ phase => 'user' }, sub {
+register_worker({ phase => 'main', priority => 1000  }, sub {
   my ($job, $workerconf) = @_;
 
   my $device = $job->device;

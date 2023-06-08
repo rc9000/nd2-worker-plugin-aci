@@ -16,7 +16,7 @@ use namespace::clean;
 
 has port => (
   is  => 'rw',
-  isa => sub { die "$_[0] is impossilbe" unless $_[0] < 65000 },
+  isa => sub { die "$_[0] is impossible" unless $_[0] < 65000 },
   default => sub { return 443 },
 );
 
@@ -27,6 +27,11 @@ around 'port' => sub {
 
 has [qw(host user password)] => (
   is => 'rw'
+);
+
+has epgmap => (
+  is  => 'rw',
+  default => sub { {} }
 );
 
 sub url {
@@ -47,7 +52,6 @@ sub nodeinfo {
       $matches[0]->{topSystem}->{attributes}->{mgmtAddr} = $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr};
   }
   return $matches[0]->{topSystem}->{attributes};
-
 }
 
 sub long_port {
@@ -65,8 +69,26 @@ sub long_port {
 
 }
 
+sub epg_from_fvcepdn {
+  my ($self, $dn) = @_;
+  (my $epg = $dn) =~ s!.*/epg-([^/]+)/.*!$1!;
+  unless ($epg eq $dn) {
+    return $epg;
+  }
+}
+
+sub add_to_epgmap(){
+  my ($self, $device, $port, $dn) = @_;
+  my $epg = $self->epg_from_fvcepdn($dn);
+  if ($epg){
+    $self->epgmap->{$device}->{$port}->{$epg} = 1;
+  }
+}
+
 sub read_info_from_json {
   my ($self, $fvcep, $topSystem, $aggr) = @_;
+  #my $epgmap = {};
+
 
   my $resp = decode_json($fvcep);
   my $tsj = decode_json($topSystem);
@@ -103,20 +125,21 @@ sub read_info_from_json {
       if ($c =~ m!topology/pod-(\d+)/paths-(\d+)/pathep-\[(.*?)\]!){
 
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
-        debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-          .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s', 
-          $self->host, $1, $2, $3, $mac, $vlan, ($ip ? $ip : $fipstr), $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
         my $port = $self->long_port($3); 
+        debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - '
+          .'pod %s node %s port %s %s mac %s vlan %s arpip %s devname %s devip %s cep_dn %s', 
+          $self->host, $1, $2, $3, $port, $mac, $vlan, ($ip ? $ip : $fipstr), $nodeinfo->{name}, $nodeinfo->{mgmtAddr}, $dn;
         push(@node_records, {switch => $nodeinfo->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+        $self->add_to_epgmap($nodeinfo->{mgmtAddr}, $port, $dn);
 
         if ($ip){
           push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
         }elsif ($fvIps){
           foreach my $fip (@{$fvIps}){
             push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $fip});
-            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-              .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s', 
-              $self->host, $1, $2, $3, $mac, $vlan, $fip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.2 - '
+              .'pod %s node %s port %s %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s cep_dn %s', 
+              $self->host, $1, $2, $3, $port, $mac, $vlan, $fip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr}, $dn;
           }
         }
 
@@ -130,24 +153,23 @@ sub read_info_from_json {
         (my $port_on_fex = $4) =~ s/eth//;
         my $fex = "eth$extpath/" . $port_on_fex; 
         my $port = $self->long_port($fex); 
-        debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-          .'pod %s node %s port %s fex (extpath) %s mac %s vlan %s arpip %s devname %s devip %s', 
-          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, ($ip ? $ip : $fipstr), $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+        debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.3 - '
+          .'pod %s node %s port %s fex (extpath) %s mac %s vlan %s arpip %s devname %s devip %s cep_dn %s', 
+          $self->host, $pod, $path, $port, $extpath, $mac, $vlan, ($ip ? $ip : $fipstr), $nodeinfo->{name}, $nodeinfo->{mgmtAddr}, $dn;
 
         push(@node_records, {switch => $nodeinfo->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+        $self->add_to_epgmap($nodeinfo->{mgmtAddr}, $port, $dn);
 
         if ($ip){
           push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $ip});
         }elsif ($fvIps){
           foreach my $fip (@{$fvIps}){
             push(@nodeip_records, {on_device => $nodeinfo->{mgmtAddr}, node => $mac, ip => $fip});
-            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-              .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s', 
-              $self->host, $pod, $path, $extpath, $mac, $vlan, $fip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr};
+            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.4 - '
+              .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s cep_dn %s', 
+              $self->host, $pod, $path, $extpath, $mac, $vlan, $fip, $nodeinfo->{name}, $nodeinfo->{mgmtAddr}, $dn;
           }
         }
-
-
 
       # aggregated interface directly on chassis or fex
       }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/(?:extprotpaths-\d+-\d+/)?pathep-\[(.*?)\]$!){
@@ -165,9 +187,9 @@ sub read_info_from_json {
           }elsif ($fvIps){
             foreach my $fip (@{$fvIps}){
               push(@nodeip_records, {on_device => $n->{mgmtAddr}, node => $mac, ip => $fip});
-              debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-                .'pod %s node %s port %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s', 
-               $self->host, $1, $2, $3, $mac, $vlan, $fip, $n->{name}, $n->{mgmtAddr};
+              debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.5 - '
+                .'pod %s node %s port %s %s mac %s vlan %s arpip (fvIp) %s devname %s devip %s cep_dn %s', 
+               $self->host, $1, $2, $3, $vpc, $mac, $vlan, $fip, $n->{name}, $n->{mgmtAddr}, $dn;
             }
           }
 
@@ -188,11 +210,12 @@ sub read_info_from_json {
               $ep = $1; 
             }
 
-            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - '
-              .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s ', 
-              $self->host, $pod, $id, $vpc." on ". $port, $mac, $vlan, ($ip ? $ip : $fipstr), $n->{name}, $n->{mgmtAddr}, $ep;
+            debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.6 - '
+              .'pod %s node %s port %s mac %s vlan %s arpip %s devname %s devip %s %s cep_dn %s', 
+              $self->host, $pod, $id, "vpc $vpc"." on ". $port, $mac, $vlan, ($ip ? $ip : $fipstr), $n->{name}, $n->{mgmtAddr}, $ep, $dn;
 
             push(@node_records, {switch => $n->{mgmtAddr}, port => $port, vlan => $vlan, mac => $mac});
+            $self->add_to_epgmap($n->{mgmtAddr}, $port, $dn);
 
           }else {
             warning sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info - VPC %s nodeid %s - error locating port-channel'."\n", $self->host, $vpc, $id; 
@@ -205,7 +228,7 @@ sub read_info_from_json {
     }
   }
 
-  return { nodes => \@node_records, node_ips => \@nodeip_records };
+  return { nodes => \@node_records, node_ips => \@nodeip_records, epgmap => $self->epgmap};
 }
 
 sub fetch_mac_arp_info {
@@ -293,6 +316,41 @@ sub aciget {
   return { status => $self->{r}->responseCode(), content =>  $decoded, content_json => $self->{r}->responseContent()};
 
 }
+
+sub aciget_paged { 
+    my ($self, $url) = @_;
+    my $ch = { "Cookie" => "APIC-Cookie=".$self->{token} };
+
+    my $page = 0;
+    my $pageSize = 500;
+    my @all_content;
+
+    while (1) {
+        my $pagedUrl = $url . "?page=$page&page-size=$pageSize";
+        $self->{r}->GET($pagedUrl, $ch);
+        debug sprintf ' [%s] NetdiscoX::Util::ACI - http %s get %s', $self->host,  $self->{r}->responseCode(), $pagedUrl;
+        my $decoded = decode_json($self->{r}->responseContent());
+        #push @all_content, @{$decoded->{'imdata'}};
+        push @all_content, $decoded;
+
+        if ($ENV{NETDISCOX_DUMPJSON}){
+            my $fn = "/tmp/" . url_encode($url); 
+            my $formatted = JSON->new->pretty->encode($decoded);
+            write_file($fn, $formatted);
+            debug sprintf ' [%s] NetdiscoX::Util::ACI - dumped response in %s', $self->host, $fn;
+        }
+
+        # Check if we received less records than page size, indicating we are on the last page.
+        if (scalar @{$decoded->{'imdata'}} < $pageSize) {
+            last;
+        }
+        
+        $page++;
+    }
+
+    return { status => $self->{r}->responseCode(), content =>  \@all_content, content_json => $self->{r}->responseContent()};
+}
+
 
 sub logout {
   my ($self) = @_;
