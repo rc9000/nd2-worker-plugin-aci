@@ -4,7 +4,7 @@ Netdisco plugin to fetch mac and arp tables from APIC (Cisco ACI SDN controllers
 
 ## Limitations
 
-Tested or reported to work on APIC 3.2, 4.x and up to 5.2(2f). You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited.
+Tested or reported to work on APIC 3.2, 4.x and up to 5.2(2f). You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited. The current release requires Netdisco 2.062003 or newer.
 
 ## Description
 
@@ -50,6 +50,28 @@ Then for each controller, add an entry to `device_auth`
 
 The setting `aci_ignore_uplink_re` allows to specify a regex matching a remote_type. If the match succeeds, macsuck will collect entries from the port even if it is discovered as uplink.
 
+To display some gathered ACI attributes also in the Netdisco UI, enable these custom fields:
+
+    custom_fields:
+      device:
+        - editable: false
+          name: APIC
+        - editable: false
+          name: topSystem_dn
+        - editable: false
+          name: topSystem_role
+      device_port:
+        - editable: false
+          name: l1PhysIf_dn
+        - editable: false
+          name: l1PhysIf_name
+        - editable: false
+          name: pcAggrIf_dn
+        - editable: false
+          name: pcAggrIf_name
+        - editable: false
+          name: epgs
+    
 
 ### Controller Configuration
 
@@ -93,11 +115,7 @@ Once this has proven successful, Netdisco will poll the controller in exactly th
 
  * when running `discover`, hhe `Discover::FabricDevices` module will store various ACI information in the `custom_fields` structure of Netdisco 
  * `macsuck` also stores the EPG an interface participates in, in the `device_port.custom_fields.epgs` array
- * these features require Netdisco 2.062000 or newer 
- * discovery of an APIC can become pretty lengthy, the following helps:
-   * `CREATE INDEX cf_gin_device ON device USING gin (custom_fields);`
-   * `CREATE INDEX cf_gin_device_port ON device_port USING gin (custom_fields);`
-   * `discover_timeout: 900` or higher in deployment.yml
+
 
 ## Debugging & Troubleshooting
 
