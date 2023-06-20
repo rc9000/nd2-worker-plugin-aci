@@ -113,7 +113,7 @@ Once this has proven successful, Netdisco will poll the controller in exactly th
 
 ## Storing device and port `dn`, EPG and other ACI attributes
 
- * when running `discover`, hhe `Discover::FabricDevices` module will store various ACI information in the `custom_fields` structure of Netdisco 
+ * when running `discover`, the `Discover::FabricDevices` module will store various ACI information in the `custom_fields` structure of Netdisco 
  * `macsuck` also stores the EPG an interface participates in, in the `device_port.custom_fields.epgs` array
 
 
