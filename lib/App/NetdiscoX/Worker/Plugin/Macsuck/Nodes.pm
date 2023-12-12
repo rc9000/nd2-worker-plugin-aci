@@ -88,7 +88,7 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s is unknown to netdisco, skipped', 
         $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
     
-    } elsif ($fab_p eq "uplink" && $remote_types->{$entry->{switch}}->{$entry->{port}} !~ m/\Q$aci_ignore_uplink_re/){
+    } elsif ($fab_p eq "uplink" && $remote_types->{$entry->{switch}}->{$entry->{port}} !~ m/$aci_ignore_uplink_re/){
       debug sprintf ' [%s] cisco aci macsuck - %s fabric switch %s port %s is an uplink, skipped', 
         $device->ip, $entry->{mac}, $entry->{switch}, $entry->{port};
 
