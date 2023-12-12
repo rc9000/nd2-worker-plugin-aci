@@ -48,9 +48,9 @@ Then for each controller, add an entry to `device_auth`
         user: 'aciuser'
         password: 'topsecret'
 
-The setting `aci_ignore_uplink_re` allows to specify a regex matching a remote_type. If the match succeeds, macsuck will collect entries from the port even if it is discovered as uplink. 
+The setting `aci_ignore_uplink_re` allows to specify a regex matching a remote_type. If the match succeeds, macsuck will collect entries from the port even if it is discovered as uplink. To see the current values in the database:
 
-    netdisco@vm02 $ netdisco-do psql
+     $ netdisco-do psql
     netdisco=> select ip, port, remote_type from device_port where ip =  '10.219.2.76' and remote_type is not null order by port;
     
          ip      |      port       |                          remote_type
@@ -60,7 +60,7 @@ The setting `aci_ignore_uplink_re` allows to specify a regex matching a remote_t
      10.219.2.76 | Ethernet1/52    | topology/pod-1/node-102
      10.219.2.76 | Ethernet103/1/6 | NetApp HCI H410S-1 Storage Node, Release Element Software 12.7
 
-Examples to apply a regex to these:
+Some examples to apply a regex to these:
 
 ```
 # Treat FlexFabric and NetApp trunks as connection to nodes:
