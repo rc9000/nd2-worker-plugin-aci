@@ -19,8 +19,14 @@ sub store_epg_custom_fields {
 
   foreach my $leaf_ip (keys %{$epgmap}){
     foreach my $port (keys %{$epgmap->{$leaf_ip}}){
-
+        info sprintf ' [%s] store_epg_custom_fields - updating fabric switch %s port %s',  $device->ip, $leaf_ip, $port;
         my $portrow = schema(vars->{'tenant'})->resultset('DevicePort')->find({ ip => $leaf_ip, port => $port});
+
+        unless ($portrow){
+          error sprintf ' [%s] store_epg_custom_fields - unable to locate switch %s port %s in device_port',  $device->ip, $leaf_ip, $port;
+          next;
+        }
+
         $portrow->make_column_dirty('custom_fields');
 
         my @arr = sort keys %{$epgmap->{$leaf_ip}->{$port}};
