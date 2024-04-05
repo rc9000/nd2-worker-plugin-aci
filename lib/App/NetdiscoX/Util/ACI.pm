@@ -25,7 +25,7 @@ around 'port' => sub {
   return $orig->(@_) + 0;
 };
 
-has [qw(host user password)] => (
+has [qw(host user password https_hostname)] => (
   is => 'rw'
 );
 
@@ -36,7 +36,7 @@ has epgmap => (
 
 sub url {
   my $self = shift;
-  return "https://" . $self->{host} .  ":" . $self->{port} . "/api";
+  return "https://" . $self->{https_hostname} .  ":" . $self->{port} . "/api";
 }
 
 sub nodeinfo {
