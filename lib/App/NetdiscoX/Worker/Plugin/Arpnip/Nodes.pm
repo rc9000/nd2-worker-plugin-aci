@@ -27,6 +27,7 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
       port => $selected_auth->{port} ? $selected_auth->{port} : 443,
       user => $selected_auth->{user},
       password => $selected_auth->{password},
+      https_hostname => $selected_auth->{https_hostname} ? $selected_auth->{https_hostname} : $device->ip
   );
 
   info sprintf ' [%s] cisco aci arpnip - fetching data from  %s', $device->ip, $aci->url;
