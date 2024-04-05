@@ -148,7 +148,7 @@ This will produce a lot of debug output (-D), show details regarding the plugin 
 
 Also check out the `./t` and  `./t/testdata` directories, you can run offline tests against the output produced by your fabric (with NETDISCOX\_DUMPJSON). To contribute test data, `./t/testdata/anon.pl` can be used to remove all identifying information from the files.
 
-In case of errors like `SSL connect attempt failed error:14090086:SSL routines:ssl3_get_server_certificate:certificate verify failed at LWP/Protocol/http.pm line 50.`, either install the proper CA cert or set the environment variable `PERL_LWP_SSL_VERIFY_HOSTNAME=0` (not recommended).
+In case of errors like `SSL connect attempt failed error:14090086:SSL routines:ssl3_get_server_certificate:certificate verify failed at LWP/Protocol/http.pm line 50.`, either install the proper CA cert or set the environment variable `PERL_LWP_SSL_VERIFY_HOSTNAME=0` (not recommended). Also consider the `device_auth.https_hostname` to match the hostname in the certificate.
 
 
 
