@@ -47,6 +47,9 @@ Then for each controller, add an entry to `device_auth`
           - 10.5.199.5 
         user: 'aciuser'
         password: 'topsecret'
+        # preferred hostname to use in https api connection, to match cert, cnames, AAAA records etc.
+        # connection will use the ip address if not specified
+        https_hostname: 'aci-prod.example.local'
 
 The setting `aci_ignore_uplink_re` allows to specify a regex matching a remote_type. If the match succeeds, macsuck will collect entries from the port even if it is discovered as uplink. To see the current values in the database:
 
