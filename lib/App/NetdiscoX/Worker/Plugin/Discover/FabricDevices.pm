@@ -24,6 +24,7 @@ register_worker({ phase => 'user', priority => 100  }, sub {
       port => $selected_auth->{port} ? $selected_auth->{port} : 443,
       user => $selected_auth->{user},
       password => $selected_auth->{password},
+      https_hostname => $selected_auth->{https_hostname} ? $selected_auth->{https_hostname} : $device->ip
     );
     $aci->login();
     discover_topsystems($device, $aci);
