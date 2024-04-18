@@ -79,11 +79,32 @@ sub discover_topsystems {
 
 }
 
+sub get_fexmap {
+  my ($device, $aci) = @_;
+
+  my $fexmap = {};
+
+  my $fexes =  $aci->aciget_paged($aci->url() . "/node/class/eqptExtCh.json");
+  foreach my $p (@{$fexes->{content}}){
+    foreach my $n (@{$p->{'imdata'}}){
+      my $att = $n->{'eqptExtCh'}->{'attributes'};
+      my $fexdescr = sprintf 'fex %s %s serial %s', $att->{'dn'}, $att->{'descr'}, $att->{'ser'}; 
+      $att->{'fexdescr'} = $fexdescr;
+      debug sprintf ' [%s] found %s', $device->ip, $fexdescr;
+      $fexmap->{$att->{'dn'}} = $att;
+    }
+  }
+
+  return $fexmap;
+
+}
+
 sub discover_interfaces {
   my ($device, $aci, $class) = @_;
   my $device_auth = [grep { $_->{tag} eq "aci" } @{setting('device_auth')}];
   my $selected_auth = $device_auth->[0];
   #my $class = "pcAggrIf";
+  my $fexmap = get_fexmap($device, $aci);
   my $interfaces =  $aci->aciget_paged($aci->url() . "/node/class/$class.json");
   my $devicecache = {};
 
@@ -103,6 +124,15 @@ sub discover_interfaces {
         #$class.'_descr' => $att->{'descr'},
         #'dn' => $att->{'dn'}
       };
+
+      # check if this is a port on a fex, i.e. topology/pod-1/node-1094/sys/phys-[eth102/1/5] -> topology/pod-1/node-1094/sys/extch-102 exists
+      (my $fexdn = $att->{'dn'}) =~ s!/sys/phys-.eth(\d+)/\d+/\d+.!/sys/extch-$1!;
+      my $fexattr = $fexmap->{$fexdn};
+      if ($fexattr->{'fexdescr'}){
+        $store_attrs->{'eqptExtCh'} = $fexattr->{'fexdescr'};
+        debug sprintf ' [%s] storing FEX info (eqptExtCh): %s on %s', $device->ip, $att->{'dn'}, $fexattr->{'fexdescr'} ;
+      }
+
       debug sprintf ' [%s] updating custom_fields for %s %s name: %s top: %s', $device->ip, $class, $att->{'dn'}, $att->{'name'}, $system_dn;
 
       # now we need to find the fabric switch to update

@@ -94,6 +94,8 @@ To display some gathered ACI attributes also in the Netdisco UI, enable these cu
         - editable: false
           name: pcAggrIf_name
         - editable: false
+          name: eqptExtCh
+        - editable: false
           name: epgs
     
 
