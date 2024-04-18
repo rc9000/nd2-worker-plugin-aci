@@ -15,6 +15,7 @@ This module can talk to APIC to:
 * emulate the regular Netdisco SNMP-based arpnip to store fvCEp MAC/IP pairs like normal arp table entries  
 * enhance Netdisco discovery to enable L2 and L3 layers on the controller, so it is eligible for arpnip and macsuck jobs
 * populate Netdisco `custom_fields` with ACI-specifc attributes
+* stores model and serial numbers of fabric extenders, which seems to be impossible with SNMP-only means
 
 ## Installation
 
