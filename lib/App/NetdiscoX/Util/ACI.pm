@@ -12,6 +12,7 @@ use URL::Encode ':all';
 use Hash::Merge qw(merge);
 use Moo;
 use namespace::clean;
+use LWP::UserAgent;
 
 
 has port => (
@@ -280,7 +281,14 @@ sub login {
   my $url = $self->url() . "/aaaLogin.json";
   debug sprintf ' [%s] NetdiscoX::Util::ACI - posting %s to url %s', $self->host, $dataj, $url;
 
-  $self->{r} = REST::Client->new();
+  my $ua = LWP::UserAgent->new(
+      ssl_opts => {
+          verify_hostname => $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} // 1,
+          SSL_verify_mode => $ENV{PERL_LWP_SSL_VERIFY_MODE} // 1,
+      },
+  );
+
+  $self->{r} = REST::Client->new({useragent => $ua});
   $self->{r}->POST($url, $dataj);
   my $replyj = $self->{r}->responseContent();
   my $code = $self->{r}->responseCode();

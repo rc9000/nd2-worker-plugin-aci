@@ -88,7 +88,7 @@ sub get_fexmap {
   foreach my $p (@{$fexes->{content}}){
     foreach my $n (@{$p->{'imdata'}}){
       my $att = $n->{'eqptExtCh'}->{'attributes'};
-      my $fexdescr = sprintf 'fex %s %s serial %s', $att->{'dn'}, $att->{'descr'}, $att->{'ser'}; 
+      my $fexdescr = sprintf 'fex %s %s %s serial %s', $att->{'dn'}, $att->{'model'}, $att->{'descr'}, $att->{'ser'}; 
       $att->{'fexdescr'} = $fexdescr;
       debug sprintf ' [%s] found %s', $device->ip, $fexdescr;
       $fexmap->{$att->{'dn'}} = $att;
