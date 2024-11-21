@@ -49,8 +49,12 @@ sub nodeinfo {
     # device.name is 'name' => 'v02sw0102-za'
   if ($matches[0]->{topSystem}->{attributes}->{oobMgmtAddr} eq "0.0.0.0"){
       $matches[0]->{topSystem}->{attributes}->{mgmtAddr} = $matches[0]->{topSystem}->{attributes}->{inbMgmtAddr};
+      $matches[0]->{topSystem}->{attributes}->{inbMgmtAddr} = $matches[0]->{topSystem}->{attributes}->{inbMgmtAddr};
+      $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr} = $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr};
   }else{
       $matches[0]->{topSystem}->{attributes}->{mgmtAddr} = $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr};
+      $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr} = $matches[0]->{topSystem}->{attributes}->{oobMgmtAddr};
+      $matches[0]->{topSystem}->{attributes}->{inbMgmtAddr} = $matches[0]->{topSystem}->{attributes}->{inbMgmtAddr};
   }
   return $matches[0]->{topSystem}->{attributes};
 }

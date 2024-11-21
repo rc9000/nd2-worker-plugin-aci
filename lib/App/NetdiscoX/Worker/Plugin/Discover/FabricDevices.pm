@@ -53,13 +53,15 @@ sub discover_topsystems {
       'APIC' => $device->ip,
       'topSystem_dn' => $att->{'dn'},
       'topSystem_role' => $att->{'role'},
+      'topSystem_oobMgmtAddr' => $nodeinfo->{'oobMgmtAddr'},
+      'topSystem_inbMgmtAddr' => $nodeinfo->{'inbMgmtAddr'},
     };
 
     debug sprintf ' [%s] updating custom_fields for topSystem %s dn %s', $device->ip, $topsystem_device_ip, $att->{'dn'};
 
     my $row = schema(vars->{'tenant'})->resultset('Device')->find($topsystem_device_ip);
     if (!$row){
-      info sprintf ' [%s] topSystem %s does not seem to be known in netdisco.device table, skipping', $device->ip, $topsystem_device_ip;
+      info sprintf ' [%s] discover_topsystems: topSystem %s does not seem to be known in netdisco.device table, skipping', $device->ip, $topsystem_device_ip;
       next;
     }
 
@@ -147,7 +149,7 @@ sub discover_interfaces {
       }
 
       unless ($devicerow->first){
-        info sprintf ' [%s] topSystem %s does not seem to be known in netdisco.device table, skipping', $device->ip, $system_dn;
+        info sprintf ' [%s] discover_interfaces: topSystem %s does not seem to be known in netdisco.device table, skipping', $device->ip, $system_dn;
         next;
       }
 
