@@ -4,7 +4,7 @@ Netdisco plugin to fetch mac and arp tables from APIC (Cisco ACI SDN controllers
 
 ## Limitations
 
-Tested or reported to work on APIC 3.2, 4.x and up to 5.2(2f). You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited. The current release requires Netdisco 2.062003 or newer.
+Tested or reported to work on APIC 3.2, 4.x and up to 6.0(9e). You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited. The current release requires Netdisco 2.062003 or newer.
 
 ## Description
 
