@@ -127,6 +127,8 @@ sub read_info_from_json {
 
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
         if (! ($nodeinfo->{mgmtAddr})) {
+          # this condition might happen because pod-(\d+)/paths-(\d+)/pathep- can point to a virtual object that needs
+          # looking up via fabricPathEp or fabricProtPol / fabricNodePEp, ignore this case for now
           debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - no topSystem found for dn %s , skipping', $self->host, $c ;
           next;
         }
