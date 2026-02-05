@@ -187,10 +187,12 @@ sub read_info_from_json {
       }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/(?:extprotpaths-\d+-\d+/)?pathep-\[(.*?)\]$!){
 
         my $nodeinfos = [$self->nodeinfo($2, $ts),  $self->nodeinfo($3, $ts)];
-        if (! ($nodeinfos->[0]->{mgmtAddr} && $nodeinfos->[1]->{mgmtAddr})) {
-          debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - no topSystem found for dn %s , skipping', $self->host, $c ;
-          next;
-        }
+
+        #if (! ($nodeinfos->[0]->{mgmtAddr} && $nodeinfos->[1]->{mgmtAddr})) {
+        #  debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - no topSystem found for dn %s , skipping', $self->host, $c ;
+        #  next;
+        #}
+
         my $vpc = $4;
         my $pod = $1;
         foreach my $n (@{$nodeinfos}){
