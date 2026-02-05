@@ -131,6 +131,9 @@ sub discover_interfaces {
       if ($fexattr->{'fexdescr'}){
         $store_attrs->{'eqptExtCh'} = $fexattr->{'fexdescr'};
         debug sprintf ' [%s] storing FEX info (eqptExtCh): %s on %s', $device->ip, $att->{'dn'}, $fexattr->{'fexdescr'} ;
+      }else{
+        debug sprintf ' [%s] no match storing FEX info (eqptExtCh): %s on %s', $device->ip, $att->{'dn'}, $fexdn ;
+
       }
 
       debug sprintf ' [%s] updating custom_fields for %s %s name: %s top: %s', $device->ip, $class, $att->{'dn'}, $att->{'name'}, $system_dn;
