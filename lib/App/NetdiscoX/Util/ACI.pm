@@ -126,6 +126,11 @@ sub read_info_from_json {
       if ($c =~ m!topology/pod-(\d+)/paths-(\d+)/pathep-\[(.*?)\]!){
 
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
+        if (! ($nodeinfo->{mgmtAddr})) {
+          debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - no topSystem found for dn %s , skipping', $self->host, $c ;
+          next;
+        }
+
         my $port = $self->long_port($3); 
         debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - '
           .'pod %s node %s port %s %s mac %s vlan %s arpip %s devname %s devip %s cep_dn %s', 
@@ -149,6 +154,10 @@ sub read_info_from_json {
 
         my $pod = $1;
         my $nodeinfo = $self->nodeinfo($2, $ts) ;
+        if (! ($nodeinfo->{mgmtAddr})) {
+          debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.3 - no topSystem found for dn %s , skipping', $self->host, $c ;
+          next;
+        }
         my $path = $2;
         my $extpath = $3;
         (my $port_on_fex = $4) =~ s/eth//;
@@ -176,6 +185,10 @@ sub read_info_from_json {
       }elsif ($c =~ m!topology/pod-(\d+)/protpaths-(\d+)-(\d+)/(?:extprotpaths-\d+-\d+/)?pathep-\[(.*?)\]$!){
 
         my $nodeinfos = [$self->nodeinfo($2, $ts),  $self->nodeinfo($3, $ts)];
+        if (! ($nodeinfos->[0]->{mgmtAddr} && $nodeinfos->[1]->{mgmtAddr})) {
+          debug sprintf ' [%s] NetdiscoX::Util::ACI mac_arp_info.1 - no topSystem found for dn %s , skipping', $self->host, $c ;
+          next;
+        }
         my $vpc = $4;
         my $pod = $1;
         foreach my $n (@{$nodeinfos}){
