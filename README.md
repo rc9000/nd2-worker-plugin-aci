@@ -104,6 +104,15 @@ To display some gathered ACI attributes also in the Netdisco UI, enable these cu
 
 Since we'll want to keep the controller as a managed device in Netdisco, it needs to respond to SNMP and be successfully discovered. Also, all the switches in the fabric must be discovered in Netdisco as normal SNMP-based devices, so that the mac and arp entries can be mapped to the correct device port. See the documentation at https://github.com/netdisco/netdisco/ if unsure how to achieve this. 
 
+The fabric switches only need the SNMP discover. Their own SNMP macsuck and arpnip return nothing in ACI mode, the controller jobs fill in their ports. To skip them, use the `topSystem_role` custom field that `X::Discover::FabricDevices` sets during the controller discover (custom field ACLs need Netdisco 2.064 or later). Standalone or vPC Nexus outside the fabric don't get the field and keep their SNMP jobs:
+
+    macsuck_no:
+      - 'cf:topSystem_role:(leaf|spine)'
+    arpnip_no:
+      - 'cf:topSystem_role:(leaf|spine)'
+
+An endpoint behind a vPC is reported on both leafs. Netdisco keeps a MAC active on one port per VLAN only, so it shows as active on one leaf of the pair and archived on the other.
+
 ## Running, Validation 
 
 To test if everything works, try a manual disovery. It should look like this:
