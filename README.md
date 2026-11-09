@@ -39,7 +39,7 @@ Add the following settings to `deployment.yml` to activate the extension
     include_paths: [ '/home/netdisco/nd2-worker-plugin-aci/lib' ]
     extra_worker_plugins: ['X::Macsuck::Nodes', 'X::Arpnip::Nodes', 'X::Discover::Properties', 'X::Discover::FabricDevices']
 
-Then for each controller, add an entry to `device_auth` 
+Then for each fabric, add an entry to `device_auth` for one of its controllers. Every APIC of a cluster answers for the whole fabric, so listing all of them (e.g. with a `model:` ACL) polls the same fabric once per APIC. With several fabrics, add one entry each; the plugin uses the first `aci` entry whose `only` matches the controller being polled, so each can carry its own `https_hostname`.
 
     device_auth:
       - tag: aci
