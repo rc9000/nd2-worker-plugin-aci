@@ -4,7 +4,7 @@ Netdisco plugin to fetch mac and arp tables from APIC (Cisco ACI SDN controllers
 
 ## Limitations
 
-Tested or reported to work on APIC 3.2, 4.x and up to 6.0(9e). You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited. The current release requires Netdisco 2.062003 or newer.
+Tested or reported to work on APIC 3.2, 4.x, 6.0(9e) and 6.1(5e). You're very welcome to experiment and fork or contribute, but expect stuff to fail and support to be very limited. The current release requires Netdisco 2.062003 or newer.
 
 ## Description
 
@@ -39,7 +39,7 @@ Add the following settings to `deployment.yml` to activate the extension
     include_paths: [ '/home/netdisco/nd2-worker-plugin-aci/lib' ]
     extra_worker_plugins: ['X::Macsuck::Nodes', 'X::Arpnip::Nodes', 'X::Discover::Properties', 'X::Discover::FabricDevices']
 
-Then for each controller, add an entry to `device_auth` 
+Then for each fabric, add an entry to `device_auth` for one of its controllers. Every APIC of a cluster answers for the whole fabric, so listing all of them (e.g. with a `model:` ACL) polls the same fabric once per APIC. With several fabrics, add one entry each; the plugin uses the first `aci` entry whose `only` matches the controller being polled, so each can carry its own `https_hostname`.
 
     device_auth:
       - tag: aci
@@ -103,6 +103,15 @@ To display some gathered ACI attributes also in the Netdisco UI, enable these cu
 ### Controller Configuration
 
 Since we'll want to keep the controller as a managed device in Netdisco, it needs to respond to SNMP and be successfully discovered. Also, all the switches in the fabric must be discovered in Netdisco as normal SNMP-based devices, so that the mac and arp entries can be mapped to the correct device port. See the documentation at https://github.com/netdisco/netdisco/ if unsure how to achieve this. 
+
+The fabric switches only need the SNMP discover. Their own SNMP macsuck and arpnip return nothing in ACI mode, the controller jobs fill in their ports. To skip them, use the `topSystem_role` custom field that `X::Discover::FabricDevices` sets during the controller discover (custom field ACLs need Netdisco 2.064 or later). Standalone or vPC Nexus outside the fabric don't get the field and keep their SNMP jobs:
+
+    macsuck_no:
+      - 'cf:topSystem_role:(leaf|spine)'
+    arpnip_no:
+      - 'cf:topSystem_role:(leaf|spine)'
+
+An endpoint behind a vPC is reported on both leafs. Netdisco keeps a MAC active on one port per VLAN only, so it shows as active on one leaf of the pair and archived on the other.
 
 ## Running, Validation 
 
