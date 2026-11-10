@@ -291,12 +291,19 @@ sub fetch_mac_arp_info {
 }
 
 
+# keep secrets out of -D output: show just enough to tell credentials apart
+sub _mask {
+  my $secret = shift // '';
+  return substr($secret, 0, 3) . '***';
+}
+
 sub login {
   my ($self) = @_;
   my $data = { aaaUser => { attributes => { name => $self->user , pwd => $self->password }}};
   my $dataj = encode_json($data);
   my $url = $self->url() . "/aaaLogin.json";
-  debug sprintf ' [%s] NetdiscoX::Util::ACI - posting %s to url %s', $self->host, $dataj, $url;
+  my $logj = encode_json({ aaaUser => { attributes => { name => $self->user , pwd => _mask($self->password) }}});
+  debug sprintf ' [%s] NetdiscoX::Util::ACI - posting %s to url %s', $self->host, $logj, $url;
 
   my $ua = LWP::UserAgent->new(
       ssl_opts => {
@@ -311,10 +318,12 @@ sub login {
   my $code = $self->{r}->responseCode();
 
   if ($code == 200){
-    debug sprintf ' [%s] NetdiscoX::Util::ACI - http %s reply %s', $self->host, $code, $replyj;
+    # the login reply carries the session token (twice: token and urlToken)
+    (my $logreply = $replyj) =~ s/("(?:url)?[tT]oken"\s*:\s*")([^"]*)/$1 . _mask($2)/ge;
+    debug sprintf ' [%s] NetdiscoX::Util::ACI - http %s reply %s', $self->host, $code, $logreply;
     my $reply = decode_json($replyj);
     my $token = $reply->{imdata}->[0]->{aaaLogin}->{attributes}->{token};
-    debug sprintf ' [%s] NetdiscoX::Util::ACI - token %s', $self->host, $token;
+    debug sprintf ' [%s] NetdiscoX::Util::ACI - token %s', $self->host, _mask($token);
     $self->{token} = $token;
     return true;
   }else{
