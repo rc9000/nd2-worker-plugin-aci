@@ -11,7 +11,7 @@ register_worker({ phase => 'main', priority => 1000  }, sub {
 
   my $device = $job->device;
 
-  if ($device->model eq "ACIController"){
+  if (($device->model // q{}) eq "ACIController"){
 
     info sprintf ' [%s] NetdiscoX::Properties found an ACIController - running device.layers fixup', $device->ip;
     $device->set_column( layers => "01001110" );
