@@ -17,13 +17,28 @@ no warnings 'uninitialized';
 sub store_epg_custom_fields {
   my ($device, $epgmap) = @_;
 
-  foreach my $leaf_ip (keys %{$epgmap}){
-    foreach my $port (keys %{$epgmap->{$leaf_ip}}){
-        info sprintf ' [%s] store_epg_custom_fields - updating fabric switch %s port %s',  $device->ip, $leaf_ip, $port;
-        my $portrow = schema(vars->{'tenant'})->resultset('DevicePort')->find({ ip => $leaf_ip, port => $port});
+  foreach my $leaf_ip (sort keys %{$epgmap}){
+    my $nports = scalar keys %{$epgmap->{$leaf_ip}};
+
+    # APIC reports inband or OOB mgmtAddr; netdisco may know the leaf by
+    # the other one, so resolve via device_ip aliases
+    my $leaf = get_device($leaf_ip);
+    unless ($leaf and $leaf->in_storage){
+      warning sprintf ' [%s] store_epg_custom_fields - switch %s not in netdisco (%d ports skipped)',  $device->ip, $leaf_ip, $nports;
+      next;
+    }
+    my $sw_ip = $leaf->ip;
+    debug sprintf ' [%s] store_epg_custom_fields - switch %s known as %s',  $device->ip, $leaf_ip, $sw_ip
+      if $sw_ip ne $leaf_ip;
+
+    my $missing = 0;
+    foreach my $port (sort keys %{$epgmap->{$leaf_ip}}){
+        debug sprintf ' [%s] store_epg_custom_fields - updating fabric switch %s port %s',  $device->ip, $sw_ip, $port;
+        my $portrow = schema(vars->{'tenant'})->resultset('DevicePort')->find({ ip => $sw_ip, port => $port});
 
         unless ($portrow){
-          error sprintf ' [%s] store_epg_custom_fields - unable to locate switch %s port %s in device_port',  $device->ip, $leaf_ip, $port;
+          debug sprintf ' [%s] store_epg_custom_fields - unable to locate switch %s port %s in device_port',  $device->ip, $sw_ip, $port;
+          $missing++;
           next;
         }
 
@@ -33,13 +48,15 @@ sub store_epg_custom_fields {
         my $json_arr = encode_json \@arr;
         my $k = "epgs";
 
-        debug sprintf ' [%s] cisco aci macsuck - store_epg %s %s : %s',  $device->ip, $leaf_ip, $port, $json_arr;
+        debug sprintf ' [%s] cisco aci macsuck - store_epg %s %s : %s',  $device->ip, $sw_ip, $port, $json_arr;
 
         $portrow->update({
           custom_fields => \['jsonb_set(custom_fields, ?, ?::jsonb)'  => (qq!{$k}!, $json_arr) ]
         })->discard_changes();
-    
     }
+
+    warning sprintf ' [%s] store_epg_custom_fields - switch %s: %d of %d ports not in device_port',  $device->ip, $sw_ip, $missing, $nports
+      if $missing;
   }
 }
 
@@ -68,7 +85,7 @@ register_worker({ phase => 'main', driver => 'netconf' }, sub {
   my $n = 0;
   my $fab_devices = {};
 
-  info sprintf ' [%s] cisco aci macsuck - updating epg participation in device_port', $device->ip, $n;
+  info sprintf ' [%s] cisco aci macsuck - updating epg participation in device_port', $device->ip;
   store_epg_custom_fields($device, $mac_arp_info->{epgmap});
 
   info sprintf ' [%s] cisco aci macsuck - updating node table', $device->ip;

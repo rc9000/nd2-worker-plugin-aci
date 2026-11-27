@@ -13,7 +13,7 @@ register_worker({ phase => 'user', priority => 100  }, sub {
 
   my $device = $job->device;
 
-  if ($device->model eq "ACIController"){
+  if (($device->model // q{}) eq "ACIController"){
     info sprintf ' [%s] NetdiscoX::FabricDevices - updating custom_fields for devices managed by this APIC', $device->ip;
 
     my $device_auth = [grep { $_->{tag} eq "aci" } @{setting('device_auth')}];
